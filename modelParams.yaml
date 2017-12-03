@@ -1,0 +1,10 @@
+batch_size: 8
+dropout: 0.3
+embedding_dim: 50
+epochs: 25
+filter_sizes: [2, 3, 4]
+l2_reg: 1.0e-05
+lr: 0.004
+num_classes: 5
+num_filters: 20
+num_valid_samples: 5000
