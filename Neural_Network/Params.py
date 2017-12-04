@@ -10,23 +10,29 @@ dataParams = {
 
 
 modelParams = {
-    
-'l2_reg':1e-5,
-'batch_size': 8,
-'dropout': 0.3,
-'lr': 0.004,
-'epochs':25,
-'embedding_dim': 50,
-'filter_sizes':[2,3,4],
-'num_filters': 20,
+        
+'l2_reg':1e-6,
+'batch_size': 16,
+'dropout': 0.5,
+'lr': 0.002,
+'epochs':150,
+'embedding_dim': 80,
+'filter_sizes':[3,4,5],
+'num_filters': 30,
 'num_classes':5,
-'num_valid_samples':5000
+
+'sub_batch_size': 16,
+'num_sub_batches': 3200,
+
+'valid_sub_batch_size': 16,
+'valid_num_sub_batches': 800
+
 }
 
 
 globalParams = {
-'build_vocab':True,
-'convert_and_pad':True
+'build_vocab':False,
+'convert_and_pad':False
 }
 
 

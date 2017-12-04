@@ -4,7 +4,7 @@ import numpy as np
 import deepdish as dd 
 from Params import loadfeatureParams,createParamsFile,DumpfeatureParams
 from collections import defaultdict
-import collections
+import collections,re
 #not currently using this
 
 def clean_str(string):
@@ -47,8 +47,10 @@ def build_vocab_and_dump(dataParams, source_file):
 
             try:
                 l = eval(l)
-            
-                curr_review_words = l['Filtered_text']
+                
+                filtered_text = l['Text']
+
+                curr_review_words = clean_str(filtered_text)
                 idx+=1    
                 print(idx)
             
@@ -98,12 +100,14 @@ def convert_to_indices_and_pad(original_data_file,  words_and_indices_file, data
     data_file = mode + str('_features.h5')
     label_file = mode + str('_labels.h5')
 
-    #extend vocabulary with "Pad token" and write new vocab dict into file
     word2int = loadfeatureParams(words_and_indices_file)
-    word2int['PAD_TOKEN'] = dataParams['vocab_size']
-    DumpfeatureParams(word2int, words_and_indices_file)
+    
+    if mode == 'train':
+        #extend vocabulary with "Pad token" and write new vocab dict into file
+        word2int['PAD_TOKEN'] = dataParams['vocab_size']-1
+        DumpfeatureParams(word2int, words_and_indices_file)
 
-    print("added PAD_TOKEN to dict. current size of vocab: ", len(word2int))
+        print("added PAD_TOKEN to dict. current size of vocab: ", len(word2int))
 
 
     vocab_size = dataParams['vocab_size']
@@ -111,11 +115,12 @@ def convert_to_indices_and_pad(original_data_file,  words_and_indices_file, data
     max_review_length = dataParams['max_review_length']
     labels = []
 
-    print("loopong through reviews and converting to indices ... ")
+    print("looping through reviews and converting to indices ... ")
     with h5py.File(data_file, "w") as ffile, h5py.File(label_file,"w") as lfile:
 
         #loop through every  review
         idx = 0
+        neglect = 0
         with open(original_data_file) as f:
         
             for l in f:
@@ -125,7 +130,8 @@ def convert_to_indices_and_pad(original_data_file,  words_and_indices_file, data
                 except:
                     continue
 
-                curr_review_words = l['Filtered_text']
+                curr_review_words = clean_str(l['Text'])
+
                 curr_review_words_tokenized = list (map(  str.strip, curr_review_words.split() ))
 
                 curr_review_words_tokenized = list (map( lambda x: replace_with_unk(x,word2int)  , curr_review_words_tokenized ))
@@ -133,7 +139,17 @@ def convert_to_indices_and_pad(original_data_file,  words_and_indices_file, data
 
                 curr_review_words_indexed = list(map(lambda x: int(word2int[str(x)]), curr_review_words_tokenized ))
 
-                curr_review_words_indexed.extend([vocab_size]*(max_review_length - len(curr_review_words_tokenized) ))
+                curr_review_words_indexed.extend([vocab_size-1]*(max_review_length - len(curr_review_words_tokenized) ))
+
+                # if(idx==0):
+                #     print(curr_review_words_indexed)
+                #     sys.exit()
+
+
+                #print("len of curr_review_words_indexed: ", len(curr_review_words_indexed))
+                if(len(curr_review_words_indexed) > max_review_length):
+                    neglect += 1
+                    continue
 
                 assert len(curr_review_words_indexed)==max_review_length
 
@@ -180,7 +196,8 @@ def convert_to_indices_and_pad(original_data_file,  words_and_indices_file, data
        
 
 
-
+    print("neglected %d samples due to high review length" %neglect)
+               
     return data_file,label_file
 
     
@@ -224,18 +241,21 @@ def get_next_training_batch(batch_size, batch_index, featurefile, labelfile):
 
 
 
-def get_validation_batch(num_valid_samples, featurefile, labelfile):
+def get_validation_batch(num_valid_samples, batch_index, featurefile, labelfile):
 
+    
+    i = batch_index
+    batchsize = num_valid_samples
     
     modelParams = loadfeatureParams('modelParams.yaml')
     batchsize = modelParams['batch_size']
 
-    
     with h5py.File(featurefile, "r") as ffile, h5py.File(labelfile,"r") as lfile:
-        batch_x  = ffile['features'][:num_valid_samples] 
-        batch_y  = lfile['labels'][:num_valid_samples] 
+        batch_x  = ffile['features'][i*batchsize:(i+1)*batchsize] 
+        batch_y  = lfile['labels'][i*batchsize:(i+1)*batchsize] 
+
         
-        # print("shape of batch_x: ", batch_x.shape)
+        # print("shape of batch_x: ",  batch_x.shape)
 
         # print("shape of batch_y: ",  batch_y.shape)
 

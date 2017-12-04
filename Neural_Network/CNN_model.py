@@ -15,10 +15,10 @@ class TextCNN(object):
 
         l2_loss = tf.constant(0.0)
 
-        # with tf.device('/cpu:0'),tf.name_scope("embedding"):
-        self.W = tf.Variable(tf.random_uniform([vocab_size, embedding_size],-1.0,1.0), name="W")
-        self.embedded_words = tf.nn.embedding_lookup(self.W,self.input_x)
-        self.embedded_words_expanded = tf.expand_dims(self.embedded_words,-1)
+        with tf.device('/cpu:0'),tf.name_scope("embedding"):
+            self.W1 = tf.Variable(tf.random_uniform([vocab_size, embedding_size],-1.0,1.0), name="W")
+            self.embedded_words = tf.nn.embedding_lookup(self.W1,self.input_x)
+            self.embedded_words_expanded = tf.expand_dims(self.embedded_words,-1)
 
 
         pooled_outputs = []
